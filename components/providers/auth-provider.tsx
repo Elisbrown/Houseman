@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // Simulate API call
+      // API call
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -49,15 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error("Login response error:", errorData)
         throw new Error(errorData.error || "Login failed")
       }
 
       const userData = await response.json()
+      console.log("Login successful, user data:", userData)
       setUser(userData)
       localStorage.setItem("houseman_user", JSON.stringify(userData))
-
-      // Force a page reload to ensure the UI updates
-      window.location.reload()
     } catch (error) {
       console.error("Login error:", error)
       throw error

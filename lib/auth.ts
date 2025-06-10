@@ -58,19 +58,29 @@ export async function createUser(userData: {
 
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
   try {
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .eq("is_active", true)
-      .single()
+    console.log("Authenticating user:", email)
+    const { data: user, error } = await supabase.from("users").select("*").eq("email", email).single()
 
     if (error || !user) {
+      console.log("User not found or error:", error)
       return null
     }
 
+    // Check if user is active
+    if (!user.is_active) {
+      console.log("User account is not active")
+      return null
+    }
+
+    // If we're using demo accounts without password hashing
+    if (process.env.NODE_ENV === "development" && password === user.password_hash) {
+      return user
+    }
+
+    // For real accounts, verify the password
     const isValidPassword = await verifyPassword(password, user.password_hash)
     if (!isValidPassword) {
+      console.log("Invalid password")
       return null
     }
 
