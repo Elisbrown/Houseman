@@ -3,64 +3,19 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { AvatarUpload } from "./avatar-upload"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { useTheme } from "next-themes"
 import { useToast } from "@/hooks/use-toast"
-import {
-  Settings,
-  Bell,
-  Shield,
-  HelpCircle,
-  LogOut,
-  Edit,
-  Camera,
-  Moon,
-  Sun,
-  Monitor,
-  Globe,
-  Star,
-  Award,
-  MapPin,
-  Phone,
-  Users,
-  Code,
-  FileText,
-  ExternalLink,
-} from "lucide-react"
-
-const countryCodes = [
-  { code: "+237", country: "Cameroon", flag: "🇨🇲" },
-  { code: "+240", country: "Equatorial Guinea", flag: "🇬🇶" },
-  { code: "+241", country: "Gabon", flag: "🇬🇦" },
-  { code: "+236", country: "Central African Republic", flag: "🇨🇫" },
-  { code: "+235", country: "Chad", flag: "🇹🇩" },
-  { code: "+242", country: "Republic of the Congo", flag: "🇨🇬" },
-]
-
-const cemacCountries = [
-  "Cameroon",
-  "Central African Republic",
-  "Chad",
-  "Republic of the Congo",
-  "Equatorial Guinea",
-  "Gabon",
-]
+import { updateUserAvatar } from "@/lib/auth"
+import { Settings, Bell, LogOut, Edit, Moon, Sun, Monitor, Globe } from "lucide-react"
 
 export function EnhancedProfileSettings() {
   const { user, logout } = useAuth()
@@ -68,13 +23,6 @@ export function EnhancedProfileSettings() {
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
-  const [phoneCountryCode, setPhoneCountryCode] = useState("+237")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [location, setLocation] = useState({
-    quarter: "",
-    city: "",
-    country: "Cameroon",
-  })
   const [notifications, setNotifications] = useState({
     bookings: true,
     messages: true,
@@ -86,11 +34,24 @@ export function EnhancedProfileSettings() {
     setIsEditing(!isEditing)
   }
 
-  const handleChangeAvatar = () => {
-    toast({
-      title: "Feature coming soon",
-      description: "Avatar upload will be available in the next update.",
-    })
+  const handleAvatarUpdate = async (url: string) => {
+    if (user) {
+      const success = await updateUserAvatar(user.id, url)
+      if (success) {
+        toast({
+          title: "Profile updated",
+          description: "Your profile picture has been updated successfully.",
+        })
+        // Update user in auth context
+        window.location.reload()
+      } else {
+        toast({
+          title: "Update failed",
+          description: "Failed to update profile picture. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
   }
 
   const handleSaveProfile = () => {
@@ -98,50 +59,6 @@ export function EnhancedProfileSettings() {
     toast({
       title: "Profile updated",
       description: "Your profile has been updated successfully.",
-    })
-  }
-
-  const handleSaveLocation = () => {
-    toast({
-      title: "Location updated",
-      description: "Your location has been updated successfully.",
-    })
-  }
-
-  const handleSavePhone = () => {
-    if (!phoneNumber.trim()) {
-      toast({
-        title: "Phone number required",
-        description: "Please enter a valid phone number.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    toast({
-      title: "Phone number updated",
-      description: "Your phone number has been updated successfully.",
-    })
-  }
-
-  const handleChangePassword = () => {
-    toast({
-      title: "Feature coming soon",
-      description: "Password change will be available in the next update.",
-    })
-  }
-
-  const handleDeleteAccount = () => {
-    toast({
-      title: "Feature coming soon",
-      description: "Account deletion will be available in the next update.",
-    })
-  }
-
-  const handleHelp = () => {
-    toast({
-      title: "Help Center",
-      description: "Redirecting to help center...",
     })
   }
 
@@ -164,6 +81,8 @@ export function EnhancedProfileSettings() {
     }
   }
 
+  if (!user) return null
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -184,31 +103,18 @@ export function EnhancedProfileSettings() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                <AvatarFallback className="text-lg">
-                  {user?.firstName?.[0]}
-                  {user?.lastName?.[0]}
-                </AvatarFallback>
-              </Avatar>
-              {isEditing && (
-                <Button
-                  size="sm"
-                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
-                  onClick={handleChangeAvatar}
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <AvatarUpload
+              currentAvatar={user.avatar}
+              userName={`${user.firstName} ${user.lastName}`}
+              onAvatarUpdate={handleAvatarUpdate}
+            />
 
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-xl font-semibold">
-                  {user?.firstName} {user?.lastName}
+                  {user.firstName} {user.lastName}
                 </h2>
-                {user?.isVerified && (
+                {user.isVerified && (
                   <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">✓</span>
                   </div>
@@ -216,20 +122,11 @@ export function EnhancedProfileSettings() {
               </div>
 
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant={user?.role === "provider" ? "default" : "secondary"}>{t(`auth.${user?.role}`)}</Badge>
-                {user?.role === "provider" && user?.rating && (
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{user.rating}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({user.reviewCount} {t("reviews.reviews")})
-                    </span>
-                  </div>
-                )}
+                <Badge variant={user.role === "provider" ? "default" : "secondary"}>{t(`auth.${user.role}`)}</Badge>
               </div>
 
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              {user?.phone && <p className="text-sm text-muted-foreground">{user.phone}</p>}
+              <p className="text-sm text-muted-foreground">{user.email}</p>
+              {user.phone && <p className="text-sm text-muted-foreground">{user.phone}</p>}
             </div>
           </div>
 
@@ -238,11 +135,11 @@ export function EnhancedProfileSettings() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("auth.firstName")}</Label>
-                  <Input defaultValue={user?.firstName} />
+                  <Input defaultValue={user.firstName} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("auth.lastName")}</Label>
-                  <Input defaultValue={user?.lastName} />
+                  <Input defaultValue={user.lastName} />
                 </div>
               </div>
               <Button onClick={handleSaveProfile}>{t("common.save")}</Button>
@@ -250,119 +147,6 @@ export function EnhancedProfileSettings() {
           )}
         </CardContent>
       </Card>
-
-      {/* Location Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Location
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Quarter/Neighborhood</Label>
-              <Input
-                placeholder="e.g., Bastos"
-                value={location.quarter}
-                onChange={(e) => setLocation({ ...location, quarter: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>City</Label>
-              <Input
-                placeholder="e.g., Yaoundé"
-                value={location.city}
-                onChange={(e) => setLocation({ ...location, city: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Country</Label>
-              <Select value={location.country} onValueChange={(value) => setLocation({ ...location, country: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {cemacCountries.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <Button onClick={handleSaveLocation}>Update Location</Button>
-        </CardContent>
-      </Card>
-
-      {/* Phone Number Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Phone Number
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {countryCodes.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
-                    <div className="flex items-center gap-2">
-                      <span>{country.flag}</span>
-                      <span>{country.code}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="6XX XXX XXX"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="flex-1"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Enter your phone number without the country code. Example: 677123456
-          </p>
-          <Button onClick={handleSavePhone}>Update Phone Number</Button>
-        </CardContent>
-      </Card>
-
-      {/* Provider Stats */}
-      {user?.role === "provider" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Provider Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-primary">156</p>
-                <p className="text-sm text-muted-foreground">{t("dashboard.completed")}</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-primary">4.8</p>
-                <p className="text-sm text-muted-foreground">{t("dashboard.rating")}</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-primary">47</p>
-                <p className="text-sm text-muted-foreground">{t("dashboard.totalClients")}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Settings */}
       <Card>
@@ -466,152 +250,6 @@ export function EnhancedProfileSettings() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Security */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            {t("profile.security")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline" onClick={handleChangePassword} className="w-full justify-start">
-            {t("profile.changePassword")}
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={handleDeleteAccount}
-            className="w-full justify-start text-destructive hover:text-destructive"
-          >
-            {t("profile.deleteAccount")}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Professional Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            About & Support
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline" onClick={handleHelp} className="w-full justify-start">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Help & Support
-          </Button>
-
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                About Houseman
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>About Houseman</DialogTitle>
-                <DialogDescription>Connecting service providers with clients across Central Africa</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <p className="text-sm">
-                  Houseman is the leading platform for connecting trusted service providers with clients across the
-                  CEMAC region. We're committed to building a safe, reliable, and efficient marketplace for all your
-                  service needs.
-                </p>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Version: 2.1.0</p>
-                  <p className="text-sm font-medium">Last Updated: January 2024</p>
-                  <p className="text-sm font-medium">Support: support@houseman.cm</p>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full justify-start">
-                <HelpCircle className="h-4 w-4 mr-2" />
-                FAQ
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Frequently Asked Questions</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                <div>
-                  <h4 className="font-medium mb-2">How do I get verified?</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Complete your KYC verification by uploading required documents. The process usually takes 24-48
-                    hours.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">How do payments work?</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Payments are processed securely through our platform. Providers receive payment after service
-                    completion.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">What if I have issues with a service?</h4>
-                  <p className="text-sm text-muted-foreground">
-                    You can report issues through the chat or contact our support team. We're here to help resolve any
-                    problems.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">How do I change my location?</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Update your location in the profile settings. This helps us show you relevant services in your area.
-                  </p>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full justify-start">
-                <Code className="h-4 w-4 mr-2" />
-                Developers
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Developer Information</DialogTitle>
-                <DialogDescription>Built with modern technologies for the CEMAC region</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Technology Stack</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Frontend: Next.js 14, React, TypeScript</p>
-                    <p>• UI: Tailwind CSS, shadcn/ui</p>
-                    <p>• Backend: Node.js, PostgreSQL</p>
-                    <p>• Mobile: Progressive Web App (PWA)</p>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">API Documentation</h4>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View API Docs
-                  </Button>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Contact Development Team</h4>
-                  <p className="text-sm text-muted-foreground">dev@houseman.cm</p>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </CardContent>
       </Card>
     </div>

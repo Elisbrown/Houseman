@@ -7,119 +7,23 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BottomNavigation } from "@/components/navigation/bottom-navigation"
 import { ServiceCard } from "@/components/services/service-card"
-import { BookingCard } from "@/components/bookings/booking-card"
 import { ChatList } from "@/components/chat/chat-list"
 import { ProfileSettings } from "@/components/profile/profile-settings"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useI18n } from "@/components/providers/i18n-provider"
-import { Search, Filter, Wrench, Zap, Paintbrush, Scissors, Car, Sparkles, MapPin } from "lucide-react"
+import { useServices } from "@/hooks/use-services"
+import { useCategories } from "@/hooks/use-categories"
+import { Search, Wrench, Zap, Paintbrush, Scissors, Car, Sparkles, MapPin } from "lucide-react"
 import { EnhancedSearch } from "../search/enhanced-search"
 
-const serviceCategories = [
-  {
-    id: "carpenter",
-    name: "services.carpenter",
-    icon: Wrench,
-    color: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300",
-  },
-  {
-    id: "electrician",
-    name: "services.electrician",
-    icon: Zap,
-    color: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300",
-  },
-  {
-    id: "painter",
-    name: "services.painter",
-    icon: Paintbrush,
-    color: "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300",
-  },
-  {
-    id: "barber",
-    name: "services.barber",
-    icon: Scissors,
-    color: "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300",
-  },
-  {
-    id: "mechanic",
-    name: "services.mechanic",
-    icon: Car,
-    color: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300",
-  },
-  {
-    id: "cleaner",
-    name: "services.cleaner",
-    icon: Sparkles,
-    color: "bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-300",
-  },
-]
-
-const featuredServices = [
-  {
-    id: "1",
-    title: "Home Cleaning & Disinfection",
-    provider: "Marie Dubois",
-    rating: 4.8,
-    reviewCount: 124,
-    price: 15000,
-    image: "/placeholder.svg?height=200&width=300",
-    isVerified: true,
-    category: "Cleaning",
-    location: "Yaoundé, Cameroon",
-    distance: "2.5 km",
-  },
-  {
-    id: "2",
-    title: "Electronic Device Fixing",
-    provider: "Jean Baptiste",
-    rating: 4.9,
-    reviewCount: 89,
-    price: 8000,
-    image: "/placeholder.svg?height=200&width=300",
-    isVerified: true,
-    category: "Electronics",
-    location: "Douala, Cameroon",
-    distance: "1.2 km",
-  },
-  {
-    id: "3",
-    title: "Apartment Painting",
-    provider: "Paul Ngozi",
-    rating: 4.7,
-    reviewCount: 156,
-    price: 45000,
-    image: "/placeholder.svg?height=200&width=300",
-    isVerified: false,
-    category: "Painting",
-    location: "Yaoundé, Cameroon",
-    distance: "3.8 km",
-  },
-]
-
-const recentBookings = [
-  {
-    id: "1",
-    service: "Home Cleaning",
-    provider: "Marie Dubois",
-    date: "2024-01-20",
-    time: "10:00 AM",
-    status: "confirmed" as const,
-    price: 15000,
-    image: "/placeholder.svg?height=100&width=100",
-    address: "Bastos, Yaoundé",
-  },
-  {
-    id: "2",
-    service: "Electrical Repair",
-    provider: "Jean Baptiste",
-    date: "2024-01-18",
-    time: "2:00 PM",
-    status: "completed" as const,
-    price: 8000,
-    image: "/placeholder.svg?height=100&width=100",
-    address: "Bonanjo, Douala",
-  },
-]
+const iconMap = {
+  wrench: Wrench,
+  zap: Zap,
+  paintbrush: Paintbrush,
+  scissors: Scissors,
+  car: Car,
+  sparkles: Sparkles,
+}
 
 interface ClientDashboardProps {
   initialSearchQuery?: string
@@ -131,9 +35,14 @@ export function ClientDashboard({ initialSearchQuery = "", initialCategory = "" 
   const { t } = useI18n()
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [activeTab, setActiveTab] = useState("home")
-  const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory || null)
-  const [unreadMessages, setUnreadMessages] = useState(3) // Mock unread count
+  const [unreadMessages, setUnreadMessages] = useState(0)
+
+  const { categories } = useCategories()
+  const { services: featuredServices, loading: servicesLoading } = useServices({
+    sortBy: "rating",
+    sortOrder: "desc",
+  })
 
   // Auto-navigate to search if initial query or category is provided
   useEffect(() => {
@@ -211,13 +120,6 @@ export function ClientDashboard({ initialSearchQuery = "", initialCategory = "" 
               className="pl-10 bg-white text-foreground border-0 transition-all duration-300 focus:ring-2 focus:ring-white/50"
               onFocus={() => setActiveTab("search")}
             />
-            <Button
-              size="sm"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary hover:bg-primary/90 transition-all duration-300"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
           </div>
 
           {/* Location */}
@@ -233,8 +135,8 @@ export function ClientDashboard({ initialSearchQuery = "", initialCategory = "" 
         <div className="animate-slide-in-up delay-300">
           <h2 className="text-lg font-semibold mb-4">{t("dashboard.serviceCategories")}</h2>
           <div className="grid grid-cols-3 gap-3">
-            {serviceCategories.map((category, index) => {
-              const IconComponent = category.icon
+            {categories.slice(0, 6).map((category, index) => {
+              const IconComponent = iconMap[category.icon as keyof typeof iconMap] || Wrench
               return (
                 <Card
                   key={category.id}
@@ -243,12 +145,10 @@ export function ClientDashboard({ initialSearchQuery = "", initialCategory = "" 
                   onClick={() => handleCategorySelect(category.id)}
                 >
                   <CardContent className="p-4 text-center">
-                    <div
-                      className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center mx-auto mb-2 transition-all duration-300 group-hover:scale-110`}
-                    >
+                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2 transition-all duration-300 group-hover:scale-110">
                       <IconComponent className="h-6 w-6" />
                     </div>
-                    <p className="text-sm font-medium truncate">{t(category.name)}</p>
+                    <p className="text-sm font-medium truncate">{category.name}</p>
                   </CardContent>
                 </Card>
               )
@@ -264,48 +164,48 @@ export function ClientDashboard({ initialSearchQuery = "", initialCategory = "" 
               {t("dashboard.viewAll")}
             </Button>
           </div>
-          <div className="space-y-4">
-            {featuredServices.map((service, index) => (
-              <div
-                key={service.id}
-                className="animate-slide-in-left"
-                style={{ animationDelay: `${600 + index * 100}ms` }}
-              >
-                <ServiceCard service={service} onClick={() => handleServiceClick(service.id)} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Bookings */}
-        <div className="animate-slide-in-up delay-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{t("dashboard.recentBookings")}</h2>
-            <Button variant="ghost" size="sm" onClick={() => setActiveTab("bookings")} className="hover:bg-primary/10">
-              {t("dashboard.viewAll")}
-            </Button>
-          </div>
-          {recentBookings.length > 0 ? (
-            <div className="space-y-3">
-              {recentBookings.map((booking, index) => (
-                <div
-                  key={booking.id}
-                  className="animate-slide-in-right"
-                  style={{ animationDelay: `${800 + index * 100}ms` }}
-                >
-                  <BookingCard booking={booking} onClick={() => handleBookingClick(booking.id)} userRole="client" />
-                </div>
+          {servicesLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-4">
+                    <div className="flex gap-4">
+                      <div className="w-20 h-20 bg-muted rounded-lg"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                        <div className="h-3 bg-muted rounded w-1/2"></div>
+                        <div className="h-3 bg-muted rounded w-1/4"></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
-            <Card className="animate-fade-in delay-800">
-              <CardContent className="p-4 text-center">
-                <p className="text-muted-foreground">{t("dashboard.noRecentBookings")}</p>
-                <Button className="mt-2" size="sm" onClick={() => setActiveTab("search")}>
-                  {t("dashboard.bookService")}
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {featuredServices.slice(0, 3).map((service, index) => (
+                <div
+                  key={service.id}
+                  className="animate-slide-in-left"
+                  style={{ animationDelay: `${600 + index * 100}ms` }}
+                >
+                  <ServiceCard
+                    service={{
+                      id: service.id,
+                      title: service.title,
+                      provider: `${service.provider.first_name} ${service.provider.last_name}`,
+                      rating: service.rating,
+                      reviewCount: service.review_count,
+                      price: service.price,
+                      image: service.images[0] || "/placeholder.svg",
+                      isVerified: service.provider.is_verified,
+                      category: service.category.name,
+                    }}
+                    onClick={() => handleServiceClick(service.id)}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -326,12 +226,9 @@ export function ClientDashboard({ initialSearchQuery = "", initialCategory = "" 
   const renderBookingsTab = () => (
     <div className="p-4 animate-fade-in">
       <h1 className="text-2xl font-bold mb-6">{t("nav.bookings")}</h1>
-      <div className="space-y-3">
-        {recentBookings.map((booking, index) => (
-          <div key={booking.id} className="animate-slide-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-            <BookingCard booking={booking} onClick={() => handleBookingClick(booking.id)} userRole="client" />
-          </div>
-        ))}
+      {/* Bookings will be loaded from API */}
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No bookings yet</p>
       </div>
     </div>
   )
