@@ -20,6 +20,7 @@ import { MessageWithReply } from "./message-with-reply"
 import { CallInterface } from "../call/call-interface"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { useToast } from "@/hooks/use-toast"
+import { useFileUpload } from "@/hooks/use-file-upload"
 import { ArrowLeft, Send, Phone, MoreVertical, ImageIcon, Smile, Flag, Shield, X } from "lucide-react"
 
 interface EnhancedChatWindowProps {
@@ -97,6 +98,7 @@ const mockMessages: Message[] = [
 export function EnhancedChatWindow({ chat, onBack, userRole }: EnhancedChatWindowProps) {
   const { t } = useI18n()
   const { toast } = useToast()
+  const { uploadFile, isUploading } = useFileUpload()
   const [messages, setMessages] = useState<Message[]>(mockMessages)
   const [newMessage, setNewMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
@@ -156,56 +158,37 @@ export function EnhancedChatWindow({ chat, onBack, userRole }: EnhancedChatWindo
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"]
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select a JPG, PNG, or GIF image.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please select an image smaller than 5MB.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Create image message
-      const imageUrl = URL.createObjectURL(file)
-      const message: Message = {
-        id: Date.now().toString(),
-        image: imageUrl,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isOwn: true,
-        isRead: false,
-        isDelivered: true,
-        type: "image",
-        replyTo: replyingTo
-          ? {
-              id: replyingTo.id,
-              text: replyingTo.text,
-              image: replyingTo.image,
-              sender: chat.name,
-            }
-          : undefined,
-      }
-
-      setMessages([...messages, message])
-      setReplyingTo(null)
-      toast({
-        title: "Image sent",
-        description: "Your image has been sent successfully.",
+      const result = await uploadFile(file, {
+        type: "chat",
+        allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif"],
+        maxSize: 5 * 1024 * 1024, // 5MB
       })
+
+      if (result) {
+        const message: Message = {
+          id: Date.now().toString(),
+          image: result.url,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          isOwn: true,
+          isRead: false,
+          isDelivered: true,
+          type: "image",
+          replyTo: replyingTo
+            ? {
+                id: replyingTo.id,
+                text: replyingTo.text,
+                image: replyingTo.image,
+                sender: chat.name,
+              }
+            : undefined,
+        }
+
+        setMessages([...messages, message])
+        setReplyingTo(null)
+      }
     }
   }
 
@@ -470,9 +453,14 @@ export function EnhancedChatWindow({ chat, onBack, userRole }: EnhancedChatWindo
             variant="ghost"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
             className="flex-shrink-0 hover:bg-blue-50 hover:text-blue-600"
           >
-            <ImageIcon className="h-4 w-4" />
+            {isUploading ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <ImageIcon className="h-4 w-4" />
+            )}
           </Button>
 
           <Button
