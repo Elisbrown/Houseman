@@ -32,7 +32,7 @@ export function useCategories() {
       const data = await response.json()
       setCategories(data)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch categories"
+      const errorMessage = err instanceof Error ? err.message : "An error occurred"
       setError(errorMessage)
       toast({
         title: "Error",

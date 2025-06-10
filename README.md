@@ -1,69 +1,41 @@
 # Houseman - Service Provider Platform
 
-A comprehensive service provider platform connecting clients with trusted service providers across Central Africa, built with Next.js 14, Supabase, and Vercel Blob storage.
+Houseman is a comprehensive service provider platform designed for the Central African (CEMAC) region, connecting clients with verified service providers across various categories including cleaning, electronics, beauty, automotive, and more.
 
 ## 🌟 Features
 
 ### Core Functionality
-- **User Authentication**: Secure login/registration with role-based access (Client, Provider, Admin)
-- **Service Marketplace**: Browse and search services with advanced filtering
-- **Real-time Chat**: Fully functional messaging system with image sharing
-- **Booking System**: Complete booking workflow from request to completion
-- **KYC Verification**: Document upload and verification system for providers
-- **Multi-language Support**: English and French with Google Translate integration
-- **Responsive Design**: Mobile-first PWA with smooth animations
+- **User Authentication**: Secure login/registration for clients, providers, and admins
+- **Service Marketplace**: Browse and book services from verified providers
+- **Real-time Chat**: Communicate with service providers through integrated messaging
+- **Booking Management**: Schedule, track, and manage service appointments
+- **Review System**: Rate and review completed services
+- **KYC Verification**: Document verification for service providers
+- **Multi-language Support**: English and French language options
+- **Progressive Web App**: Mobile-optimized experience with offline capabilities
 
 ### User Roles
+- **Clients**: Browse services, book appointments, chat with providers
+- **Providers**: List services, manage bookings, communicate with clients
+- **Admins**: Manage users, verify KYC documents, oversee platform operations
 
-#### Clients
-- Browse and search services
-- Book services from verified providers
-- Chat with service providers
-- Rate and review completed services
-- Manage bookings and profile
+### Technical Features
+- **PostgreSQL Database**: Robust data storage with Supabase
+- **Vercel Blob Storage**: Secure file uploads for profiles and documents
+- **Real-time Updates**: Live chat and notification system
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Type Safety**: Full TypeScript implementation
+- **Modern UI**: shadcn/ui components with smooth animations
 
-#### Service Providers
-- Create and manage service listings
-- Receive and manage booking requests
-- Chat with clients
-- Upload KYC documents for verification
-- Track earnings and statistics
+## 🚀 Getting Started
 
-#### Administrators
-- Manage users and services
-- Review and approve KYC documents
-- Handle reports and disputes
-- Monitor platform analytics
-- Manage service categories
-
-## 🛠 Tech Stack
-
-- **Frontend**: Next.js 14, React, TypeScript
-- **UI Components**: shadcn/ui, Tailwind CSS
-- **Database**: Supabase (PostgreSQL)
-- **File Storage**: Vercel Blob
-- **Authentication**: Custom auth with bcrypt
-- **Deployment**: Vercel
-- **PWA**: Service Worker, Web App Manifest
-
-## 📋 Prerequisites
-
+### Prerequisites
 - Node.js 18+ 
-- npm or yarn
-- Supabase account
-- Vercel account (for deployment)
+- PostgreSQL database (Supabase recommended)
+- Vercel account for deployment
 
-## 🚀 Installation & Setup
-
-### 1. Clone the Repository
-\`\`\`bash
-git clone <repository-url>
-cd houseman-app
-npm install
-\`\`\`
-
-### 2. Environment Variables
-Create a \`.env.local\` file in the root directory:
+### Environment Variables
+Create a `.env.local` file with the following variables:
 
 \`\`\`env
 # Supabase Configuration
@@ -74,152 +46,113 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # Vercel Blob Storage
 BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
 
-# Optional: Social Login (if implementing)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-FACEBOOK_APP_ID=your_facebook_app_id
-FACEBOOK_APP_SECRET=your_facebook_app_secret
+# Database (if using direct PostgreSQL)
+POSTGRES_URL=your_postgres_connection_string
+POSTGRES_PRISMA_URL=your_postgres_prisma_url
+POSTGRES_URL_NON_POOLING=your_postgres_non_pooling_url
+POSTGRES_USER=your_postgres_user
+POSTGRES_PASSWORD=your_postgres_password
+POSTGRES_DATABASE=your_postgres_database
+POSTGRES_HOST=your_postgres_host
 \`\`\`
 
-### 3. Database Setup
+### Installation
 
-#### Option A: Using Supabase Dashboard
-1. Go to your Supabase project dashboard
-2. Navigate to SQL Editor
-3. Copy and run the SQL scripts from \`scripts/\` folder in order:
-   - \`01-create-tables.sql\`
-   - \`02-seed-data.sql\`
-   - \`03-create-functions.sql\`
+1. **Clone the repository**
+   \`\`\`bash
+   git clone <repository-url>
+   cd houseman-app
+   \`\`\`
 
-#### Option B: Using the Project Scripts
-The project includes executable SQL scripts that you can run directly:
-1. Navigate to the scripts folder in the project
-2. Execute each script in order through the Supabase SQL editor
+2. **Install dependencies**
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-### 4. Vercel Blob Setup
-1. Install Vercel CLI: \`npm i -g vercel\`
-2. Link your project: \`vercel link\`
-3. Add Blob storage integration in Vercel dashboard
-4. Copy the \`BLOB_READ_WRITE_TOKEN\` to your environment variables
+3. **Set up the database**
+   
+   Run the SQL scripts in order:
+   \`\`\`bash
+   # Execute these scripts in your PostgreSQL database
+   # 1. scripts/01-create-tables.sql
+   # 2. scripts/02-seed-data.sql  
+   # 3. scripts/03-create-functions.sql
+   \`\`\`
 
-### 5. Run Development Server
-\`\`\`bash
-npm run dev
-\`\`\`
+4. **Start the development server**
+   \`\`\`bash
+   npm run dev
+   \`\`\`
 
-Visit \`http://localhost:3000\` to see the application.
+5. **Open your browser**
+   Navigate to `http://localhost:3000`
 
-## 🗄 Database Schema
+## 🗄️ Database Schema
 
 ### Core Tables
 - **users**: User accounts and basic information
 - **user_profiles**: Extended user profile data
 - **service_categories**: Service category definitions
-- **services**: Service listings (only visible if provider has profile picture)
-- **bookings**: Service booking requests and status
+- **services**: Service listings from providers
+- **bookings**: Service appointments and scheduling
 - **conversations**: Chat conversations between users
 - **messages**: Individual chat messages
-- **kyc_verifications**: KYC document submissions and status
-- **reviews**: Service reviews and ratings
-- **reports**: User and service reports
+- **reviews**: Service ratings and feedback
+- **kyc_verifications**: Provider verification documents
 
 ### Key Features
-- Automatic timestamp updates
-- Service rating calculations
-- Conversation last message tracking
-- Profile picture requirement for service visibility
+- UUID primary keys for all tables
+- JSONB columns for flexible data storage
+- Automatic timestamp management
+- Referential integrity with foreign keys
+- Indexes for optimal query performance
 
-## 👥 Demo Accounts
+## 🔐 Authentication
 
-### Test Credentials
-\`\`\`
-Admin:
-Email: admin@houseman.cm
-Password: HousemanAdmin2024!
+### Demo Accounts
+For testing purposes, use these demo credentials:
 
-Client:
-Email: jean@houseman.cm  
-Password: ClientDemo123!
+**Admin Account:**
+- Email: `admin@houseman.cm`
+- Password: `HousemanAdmin2024!`
 
-Provider:
-Email: marie@houseman.cm
-Password: ProviderDemo123!
-\`\`\`
+**Client Account:**
+- Email: `client@houseman.cm` 
+- Password: `ClientDemo123!`
 
-## 🎨 UI/UX Features
+**Provider Account:**
+- Email: `provider@houseman.cm`
+- Password: `ProviderDemo123!`
 
-### Design System
-- **Color Scheme**: Modern, accessible color palette
-- **Typography**: Inter font family for readability
-- **Components**: Consistent shadcn/ui component library
-- **Animations**: Smooth transitions and micro-interactions
-- **Responsive**: Mobile-first design with tablet and desktop support
+### Production Setup
+1. Configure Supabase authentication
+2. Set up password hashing with bcrypt
+3. Implement JWT token management
+4. Add social login providers (Google, Facebook)
 
-### Accessibility
-- ARIA labels and roles
-- Keyboard navigation support
-- Screen reader compatibility
-- High contrast mode support
-- Focus indicators
+## 📱 Mobile Support
 
-## 📱 PWA Features
-
-- **Offline Support**: Basic offline functionality
-- **App Installation**: Install as native app
-- **Push Notifications**: Real-time notifications (when implemented)
-- **Background Sync**: Sync data when connection restored
-
-## 🔐 Security Features
-
-- **Password Hashing**: bcrypt with salt rounds
-- **Input Validation**: Server-side validation for all inputs
-- **File Upload Security**: Type and size validation
-- **SQL Injection Protection**: Parameterized queries
-- **XSS Protection**: Input sanitization
-- **CSRF Protection**: Built-in Next.js protection
+Houseman is built as a Progressive Web App (PWA) with:
+- Responsive design for all screen sizes
+- Offline functionality
+- App-like experience on mobile devices
+- Push notification support (coming soon)
 
 ## 🌍 Internationalization
 
-### Supported Languages
-- English (en)
-- French (fr)
+The platform supports multiple languages:
+- **English** (default)
+- **French** (Français)
 
-### Google Translate Integration
-- Automatic language detection
-- Real-time translation for dynamic content
-- Persistent language preferences
+Language preferences are stored locally and persist across sessions.
 
-## 📊 Platform Guidelines
+## 🎨 UI/UX Features
 
-### For Service Providers
-- Must upload profile picture before services are visible
-- Complete KYC verification for blue tick
-- Maintain professional communication
-- Provide accurate service descriptions
-- Honor booking commitments
-
-### For Clients
-- Provide clear service requirements
-- Communicate respectfully
-- Pay agreed amounts promptly
-- Leave honest reviews
-- Report any issues
-
-## 🚀 Deployment
-
-### Vercel Deployment (Recommended)
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
-
-### Manual Deployment
-\`\`\`bash
-npm run build
-npm run start
-\`\`\`
-
-### Environment Setup
-Ensure all environment variables are properly configured in your deployment environment.
+- **Dark/Light Mode**: System-aware theme switching
+- **Smooth Animations**: Framer Motion powered transitions
+- **Accessible Design**: WCAG compliant interface
+- **Modern Components**: shadcn/ui component library
+- **Responsive Layout**: Mobile-first design approach
 
 ## 🔧 Development
 
@@ -229,21 +162,32 @@ houseman-app/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
 │   ├── globals.css        # Global styles
-│   └── layout.tsx         # Root layout
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Home page
 ├── components/            # React components
-│   ├── ui/               # shadcn/ui components
+│   ├── ui/               # Base UI components
 │   ├── auth/             # Authentication components
 │   ├── dashboard/        # Dashboard components
-│   ├── chat/             # Chat components
-│   └── ...
+│   ├── services/         # Service-related components
+│   └── providers/        # Context providers
 ├── hooks/                # Custom React hooks
-├── lib/                  # Utility functions
+├── lib/                  # Utility libraries
 ├── types/                # TypeScript type definitions
 ├── scripts/              # Database scripts
 └── public/               # Static assets
 \`\`\`
 
-### Key Commands
+### Key Technologies
+- **Framework**: Next.js 14 with App Router
+- **Database**: PostgreSQL with Supabase
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Type Safety**: TypeScript
+- **Authentication**: Custom JWT implementation
+- **File Storage**: Vercel Blob
+- **Deployment**: Vercel Platform
+
+### Development Commands
 \`\`\`bash
 npm run dev          # Start development server
 npm run build        # Build for production
@@ -251,6 +195,53 @@ npm run start        # Start production server
 npm run lint         # Run ESLint
 npm run type-check   # Run TypeScript checks
 \`\`\`
+
+## 🚀 Deployment
+
+### Vercel Deployment (Recommended)
+
+1. **Connect to Vercel**
+   - Push code to GitHub/GitLab
+   - Connect repository to Vercel
+   - Configure environment variables
+
+2. **Database Setup**
+   - Create Supabase project
+   - Run database migration scripts
+   - Configure connection strings
+
+3. **Environment Configuration**
+   - Add all required environment variables
+   - Configure Vercel Blob storage
+   - Set up domain (optional)
+
+### Manual Deployment
+
+1. **Build the application**
+   \`\`\`bash
+   npm run build
+   \`\`\`
+
+2. **Deploy to your hosting provider**
+   - Upload build files
+   - Configure environment variables
+   - Set up database connection
+
+## 🔒 Security Features
+
+- **Password Hashing**: bcrypt for secure password storage
+- **Input Validation**: Server-side validation for all inputs
+- **SQL Injection Protection**: Parameterized queries
+- **XSS Prevention**: Content sanitization
+- **CSRF Protection**: Built-in Next.js protection
+- **File Upload Security**: Type and size validation
+
+## 📊 Monitoring & Analytics
+
+- **Error Tracking**: Built-in error boundaries
+- **Performance Monitoring**: Web Vitals tracking
+- **User Analytics**: Privacy-focused analytics
+- **Database Monitoring**: Query performance tracking
 
 ## 🤝 Contributing
 
@@ -260,28 +251,40 @@ npm run type-check   # Run TypeScript checks
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📞 Support
-
-For technical support or questions:
-- Email: dev@houseman.cm
-- Documentation: [Project Wiki]
-- Issues: [GitHub Issues]
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- shadcn/ui for the component library
-- Supabase for the backend infrastructure
-- Vercel for hosting and blob storage
-- The Next.js team for the framework
-- All contributors and testers
+For support and questions:
+- **Email**: support@houseman.cm
+- **Documentation**: [Project Wiki]
+- **Issues**: [GitHub Issues]
+
+## 🗺️ Roadmap
+
+### Phase 1 (Current)
+- ✅ Core platform functionality
+- ✅ User authentication and profiles
+- ✅ Service marketplace
+- ✅ Real-time chat
+- ✅ Booking system
+
+### Phase 2 (Coming Soon)
+- 🔄 Payment integration
+- 🔄 Push notifications
+- 🔄 Advanced search filters
+- 🔄 Service provider analytics
+- 🔄 Mobile app (React Native)
+
+### Phase 3 (Future)
+- 📅 AI-powered recommendations
+- 📅 Video calling integration
+- 📅 Multi-vendor marketplace
+- 📅 Advanced reporting
+- 📅 API for third-party integrations
 
 ---
 
-**Built with ❤️ for Central Africa**
-\`\`\`
-
-This README provides comprehensive documentation for the Houseman platform, including setup instructions, feature descriptions, and deployment guidelines. The platform is now fully integrated with Supabase for data management and Vercel Blob for file storage, with all features working with real data from the database.
+**Built with ❤️ for the CEMAC region**

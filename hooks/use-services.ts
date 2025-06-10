@@ -16,14 +16,15 @@ interface Service {
     id: string
     first_name: string
     last_name: string
-    avatar_url: string
+    avatar_url: string | null
     is_verified: boolean
   }
   category: {
     id: string
     name: string
-    icon: string
+    icon: string | null
   }
+  service_area?: any
 }
 
 interface UseServicesOptions {
@@ -50,13 +51,13 @@ export function useServices(options: UseServicesOptions = {}) {
       const params = new URLSearchParams()
       if (options.category) params.append("category", options.category)
       if (options.search) params.append("search", options.search)
-      if (options.minPrice) params.append("minPrice", options.minPrice.toString())
-      if (options.maxPrice) params.append("maxPrice", options.maxPrice.toString())
-      if (options.minRating) params.append("minRating", options.minRating.toString())
+      if (options.minPrice !== undefined) params.append("minPrice", options.minPrice.toString())
+      if (options.maxPrice !== undefined) params.append("maxPrice", options.maxPrice.toString())
+      if (options.minRating !== undefined) params.append("minRating", options.minRating.toString())
       if (options.sortBy) params.append("sortBy", options.sortBy)
       if (options.sortOrder) params.append("sortOrder", options.sortOrder)
 
-      const response = await fetch(`/api/services?${params}`)
+      const response = await fetch(`/api/services?${params.toString()}`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch services")
@@ -65,7 +66,7 @@ export function useServices(options: UseServicesOptions = {}) {
       const data = await response.json()
       setServices(data)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch services"
+      const errorMessage = err instanceof Error ? err.message : "An error occurred"
       setError(errorMessage)
       toast({
         title: "Error",
