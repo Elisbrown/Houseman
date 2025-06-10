@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createClient()
     const { searchParams } = new URL(request.url)
+
+    // Get query parameters
     const category = searchParams.get("category")
     const search = searchParams.get("search")
     const minPrice = searchParams.get("minPrice")
@@ -12,25 +15,25 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at"
     const sortOrder = searchParams.get("sortOrder") || "desc"
 
+    // Build the query
     let query = supabase
       .from("services")
       .select(`
         *,
-        provider:users!services_provider_id_fkey(
+        provider:users!services_provider_id_fkey (
           id,
           first_name,
           last_name,
           avatar_url,
           is_verified
         ),
-        category:service_categories!services_category_id_fkey(
+        category:categories!services_category_id_fkey (
           id,
           name,
           icon
         )
       `)
       .eq("is_active", true)
-      .not("provider.avatar_url", "is", null) // Only show services from providers with profile pictures
 
     // Apply filters
     if (category) {
@@ -42,11 +45,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (minPrice) {
-      query = query.gte("price", Number.parseFloat(minPrice))
+      query = query.gte("price", Number.parseInt(minPrice))
     }
 
     if (maxPrice) {
-      query = query.lte("price", Number.parseFloat(maxPrice))
+      query = query.lte("price", Number.parseInt(maxPrice))
     }
 
     if (minRating) {
@@ -59,31 +62,55 @@ export async function GET(request: NextRequest) {
     const { data: services, error } = await query
 
     if (error) {
-      console.error("Error fetching services:", error)
+      console.error("Database error:", error)
       return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 })
     }
 
-    return NextResponse.json(services || [])
+    // Process the services data
+    const processedServices =
+      services?.map((service) => ({
+        ...service,
+        currency: service.currency || "XAF",
+        images: service.images || [],
+        rating: service.rating || 0,
+        review_count: service.review_count || 0,
+      })) || []
+
+    return NextResponse.json(processedServices)
   } catch (error) {
-    console.error("Services API error:", error)
+    console.error("API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const serviceData = await request.json()
+    const supabase = createClient()
+    const body = await request.json()
 
-    const { data: service, error } = await supabase.from("services").insert(serviceData).select().single()
+    const { data: service, error } = await supabase
+      .from("services")
+      .insert([
+        {
+          ...body,
+          currency: body.currency || "XAF",
+          images: body.images || [],
+          rating: 0,
+          review_count: 0,
+          is_active: true,
+        },
+      ])
+      .select()
+      .single()
 
     if (error) {
-      console.error("Error creating service:", error)
+      console.error("Database error:", error)
       return NextResponse.json({ error: "Failed to create service" }, { status: 500 })
     }
 
-    return NextResponse.json(service)
+    return NextResponse.json(service, { status: 201 })
   } catch (error) {
-    console.error("Create service error:", error)
+    console.error("API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
