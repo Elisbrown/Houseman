@@ -1,77 +1,69 @@
 "use client"
 
 import { useState } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { put } from "@vercel/blob"
+import config from "@/lib/config"
 
 interface UploadOptions {
-  type?: string
-  maxSize?: number
+  folder?: string
+  maxSizeMB?: number
   allowedTypes?: string[]
 }
 
 export function useFileUpload() {
   const [isUploading, setIsUploading] = useState(false)
-  const { toast } = useToast()
+  const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   const uploadFile = async (file: File, options: UploadOptions = {}) => {
-    const {
-      type = "general",
-      maxSize = 5 * 1024 * 1024, // 5MB default
-      allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "application/pdf"],
-    } = options
-
-    // Validate file type
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: `Please select a file of type: ${allowedTypes.join(", ")}`,
-        variant: "destructive",
-      })
-      return null
-    }
-
-    // Validate file size
-    if (file.size > maxSize) {
-      toast({
-        title: "File too large",
-        description: `Please select a file smaller than ${Math.round(maxSize / (1024 * 1024))}MB`,
-        variant: "destructive",
-      })
-      return null
-    }
-
-    setIsUploading(true)
-
     try {
-      const response = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}&type=${type}`, {
-        method: "POST",
-        body: file,
-      })
+      setIsUploading(true)
+      setProgress(0)
+      setError(null)
 
-      if (!response.ok) {
-        throw new Error("Upload failed")
+      // Validate file size
+      const maxSize = options.maxSizeMB ? options.maxSizeMB * 1024 * 1024 : config.storage.maxFileSize
+
+      if (file.size > maxSize) {
+        throw new Error(`File size exceeds the maximum allowed size (${options.maxSizeMB || 5}MB)`)
       }
 
-      const result = await response.json()
+      // Validate file type
+      const allowedTypes = options.allowedTypes || config.storage.allowedFileTypes
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error(`File type not allowed. Allowed types: ${allowedTypes.join(", ")}`)
+      }
 
-      toast({
-        title: "Upload successful",
-        description: "Your file has been uploaded successfully.",
+      // Create folder path if provided
+      const folderPath = options.folder ? `${options.folder}/` : ""
+
+      // Generate a unique filename with timestamp and random string
+      const timestamp = new Date().getTime()
+      const randomString = Math.random().toString(36).substring(2, 10)
+      const fileName = `${folderPath}${timestamp}-${randomString}-${file.name}`
+
+      // Upload to Vercel Blob
+      const response = await put(fileName, file, {
+        access: "public",
+        handleUploadProgress: (progress) => {
+          setProgress(Math.round(progress))
+        },
       })
 
-      return result
-    } catch (error) {
-      console.error("Upload error:", error)
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your file. Please try again.",
-        variant: "destructive",
-      })
-      return null
+      setProgress(100)
+      return response.url
+    } catch (err: any) {
+      setError(err.message || "An error occurred during upload")
+      throw err
     } finally {
       setIsUploading(false)
     }
   }
 
-  return { uploadFile, isUploading }
+  return {
+    uploadFile,
+    isUploading,
+    progress,
+    error,
+  }
 }

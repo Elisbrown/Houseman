@@ -1,186 +1,103 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Star, MapPin, MessageCircle, Phone } from "lucide-react"
-import { useI18n } from "@/components/providers/i18n-provider"
-import { useAuth } from "@/components/providers/auth-provider"
-import { useToast } from "@/hooks/use-toast"
+import Image from "next/image"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Star } from "lucide-react"
 
 interface ServiceCardProps {
-  service: {
-    id: string
-    title: string
-    description: string
-    price: number
-    currency: string
-    images: string[]
-    rating: number
-    review_count: number
-    provider: {
-      id: string
-      first_name: string
-      last_name: string
-      avatar_url: string | null
-      is_verified: boolean
-    }
-    category: {
-      id: string
-      name: string
-      icon: string | null
-    }
-    service_area?: any
-  }
-  onBook?: (serviceId: string) => void
-  onMessage?: (providerId: string) => void
-  onCall?: (providerId: string) => void
+  id: string
+  title: string
+  description: string
+  price: number
+  currency?: string
+  rating?: number
+  reviewCount?: number
+  providerName?: string
+  providerAvatar?: string
+  image?: string
+  onClick?: () => void
 }
 
-export function ServiceCard({ service, onBook, onMessage, onCall }: ServiceCardProps) {
-  const { t } = useI18n()
-  const { user } = useAuth()
-  const { toast } = useToast()
-  const [imageError, setImageError] = useState(false)
-
-  const handleBook = () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to book services.",
-        variant: "destructive",
-      })
-      return
-    }
-    onBook?.(service.id)
-  }
-
-  const handleMessage = () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to message providers.",
-        variant: "destructive",
-      })
-      return
-    }
-    onMessage?.(service.provider.id)
-  }
-
-  const handleCall = () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to call providers.",
-        variant: "destructive",
-      })
-      return
-    }
-    onCall?.(service.provider.id)
-  }
-
-  const formatPrice = (price: number, currency?: string) => {
+// Format price with currency
+const formatPrice = (price: number, currency?: string) => {
+  try {
     // Default to XAF (Central African Franc) if no currency provided
     const currencyCode = currency || "XAF"
 
-    try {
-      return new Intl.NumberFormat("fr-FR", {
-        style: "currency",
-        currency: currencyCode,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(price)
-    } catch (error) {
-      // Fallback if currency is invalid
-      return `${price.toLocaleString()} ${currencyCode}`
-    }
+    return new Intl.NumberFormat("fr-CM", {
+      style: "currency",
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  } catch (error) {
+    // Fallback if Intl.NumberFormat fails
+    console.error("Price formatting error:", error)
+    return `${price.toLocaleString()} ${currency || "XAF"}`
   }
+}
 
-  const getImageSrc = () => {
-    if (imageError || !service.images || service.images.length === 0) {
-      return "/placeholder.svg?height=200&width=300"
-    }
-    return service.images[0]
-  }
+export function ServiceCard({
+  id,
+  title,
+  description,
+  price,
+  currency,
+  rating = 0,
+  reviewCount = 0,
+  providerName,
+  providerAvatar,
+  image,
+  onClick,
+}: ServiceCardProps) {
+  // Default image if none provided
+  const serviceImage = image || "/placeholder.svg?height=200&width=300"
+
+  // Default avatar if none provided
+  const avatar = providerAvatar || "/placeholder.svg?height=40&width=40"
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="p-0">
-        <div className="relative">
-          <img
-            src={getImageSrc() || "/placeholder.svg"}
-            alt={service.title}
-            className="w-full h-48 object-cover"
-            onError={() => setImageError(true)}
-          />
-          <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className="bg-white/90 text-black">
-              {service.category.name}
-            </Badge>
-          </div>
-          {service.rating > 0 && (
-            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/90 rounded-full px-2 py-1">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-medium">{service.rating.toFixed(1)}</span>
-              <span className="text-xs text-muted-foreground">({service.review_count})</span>
-            </div>
-          )}
-        </div>
-      </CardHeader>
+    <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer" onClick={onClick}>
+      <div className="relative h-48 w-full">
+        <Image
+          src={serviceImage || "/placeholder.svg"}
+          alt={title}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+      </div>
 
       <CardContent className="p-4">
-        <div className="space-y-3">
-          <div>
-            <h3 className="font-semibold text-lg line-clamp-1">{service.title}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
-          </div>
+        <h3 className="font-semibold text-lg line-clamp-1">{title}</h3>
 
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-bold text-primary">{formatPrice(service.price, service.currency)}</div>
-            {service.service_area && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3" />
-                <span>{service.service_area.address}</span>
-              </div>
-            )}
-          </div>
+        <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{description}</p>
 
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={service.provider.avatar_url || "/placeholder.svg"} />
-              <AvatarFallback>
-                {service.provider.first_name[0]}
-                {service.provider.last_name[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium truncate">
-                  {service.provider.first_name} {service.provider.last_name}
-                </span>
-                {service.provider.is_verified && (
-                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
-                  </div>
-                )}
-              </div>
-            </div>
+        <div className="flex items-center mt-3">
+          <div className="flex items-center">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="ml-1 text-sm font-medium">{rating.toFixed(1)}</span>
+            <span className="ml-1 text-xs text-muted-foreground">({reviewCount})</span>
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 flex gap-2">
-        <Button onClick={handleBook} className="flex-1">
-          {t("services.book")}
-        </Button>
-        <Button variant="outline" size="icon" onClick={handleMessage}>
-          <MessageCircle className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={handleCall}>
-          <Phone className="h-4 w-4" />
-        </Button>
+      <CardFooter className="p-4 pt-0 flex items-center justify-between">
+        <div className="flex items-center">
+          {providerAvatar && (
+            <div className="relative h-6 w-6 rounded-full overflow-hidden mr-2">
+              <Image
+                src={avatar || "/placeholder.svg"}
+                alt={providerName || "Service provider"}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
+          {providerName && <span className="text-xs text-muted-foreground">{providerName}</span>}
+        </div>
+
+        <div className="font-semibold">{formatPrice(price, currency)}</div>
       </CardFooter>
     </Card>
   )

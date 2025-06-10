@@ -1,50 +1,46 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useToast } from "@/hooks/use-toast"
+import config from "@/lib/config"
 
-interface Category {
+export interface Category {
   id: string
   name: string
-  description: string | null
-  icon: string | null
-  is_active: boolean
-  created_at: string
+  icon: string
+  description?: string
+  serviceCount?: number
 }
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch("/api/categories")
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories")
-      }
-
-      const data = await response.json()
-      setCategories(data)
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred"
-      setError(errorMessage)
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Fetch categories from API
+        const response = await fetch(`${config.app.apiUrl}/categories`)
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to fetch categories")
+        }
+
+        const data = await response.json()
+        setCategories(data.categories || [])
+      } catch (err: any) {
+        console.error("Error fetching categories:", err)
+        setError(err.message || "An error occurred while fetching categories")
+        setCategories([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchCategories()
   }, [])
 
@@ -52,6 +48,5 @@ export function useCategories() {
     categories,
     loading,
     error,
-    refetch: fetchCategories,
   }
 }

@@ -1,56 +1,83 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createServerSupabaseClient } from "@/lib/supabase"
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const supabase = createServerSupabaseClient()
+    const searchParams = request.nextUrl.searchParams
+
+    // Parse query parameters
     const userId = searchParams.get("userId")
 
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
     }
 
+    // Fetch conversations where the user is a participant
     const { data: conversations, error } = await supabase
       .from("conversations")
       .select(`
         *,
-        participant_1_user:users!conversations_participant_1_fkey(
-          id,
-          first_name,
-          last_name,
-          avatar_url,
-          is_verified
-        ),
-        participant_2_user:users!conversations_participant_2_fkey(
-          id,
-          first_name,
-          last_name,
-          avatar_url,
-          is_verified
-        ),
-        booking:bookings(
-          id,
-          service:services(
+        participants:conversation_participants(
+          user_id,
+          user:user_id(
             id,
-            title
+            first_name,
+            last_name,
+            avatar_url,
+            role
           )
         ),
         last_message:messages(
           id,
           content,
-          message_type,
-          created_at
+          created_at,
+          sender_id
         )
       `)
-      .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
-      .order("last_message_at", { ascending: false })
+      .eq("conversation_participants.user_id", userId)
+      .order("updated_at", { ascending: false })
 
     if (error) {
       console.error("Error fetching conversations:", error)
       return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 })
     }
 
-    return NextResponse.json(conversations || [])
+    // Format the response
+    const formattedConversations = conversations.map((conversation) => {
+      // Filter out the current user from participants
+      const otherParticipants = conversation.participants.filter((p) => p.user_id !== userId).map((p) => p.user)
+
+      // Get the last message
+      const lastMessage = conversation.last_message?.[0]
+
+      return {
+        id: conversation.id,
+        title: conversation.title || otherParticipants.map((p) => `${p.first_name} ${p.last_name}`).join(", "),
+        participants: otherParticipants.map((p) => ({
+          id: p.id,
+          firstName: p.first_name,
+          lastName: p.last_name,
+          avatar: p.avatar_url,
+          role: p.role,
+        })),
+        lastMessage: lastMessage
+          ? {
+              id: lastMessage.id,
+              content: lastMessage.content,
+              createdAt: lastMessage.created_at,
+              isFromUser: lastMessage.sender_id === userId,
+            }
+          : null,
+        unreadCount: conversation.unread_count || 0,
+        createdAt: conversation.created_at,
+        updatedAt: conversation.updated_at,
+      }
+    })
+
+    return NextResponse.json({
+      conversations: formattedConversations,
+    })
   } catch (error) {
     console.error("Conversations API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -59,27 +86,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { participant1, participant2, bookingId } = await request.json()
+    const supabase = createServerSupabaseClient()
+    const data = await request.json()
 
-    // Check if conversation already exists
-    const { data: existingConversation } = await supabase
-      .from("conversations")
-      .select("id")
-      .or(
-        `and(participant_1.eq.${participant1},participant_2.eq.${participant2}),and(participant_1.eq.${participant2},participant_2.eq.${participant1})`,
-      )
-      .single()
+    // Validate required fields
+    const { participants, title } = data
 
-    if (existingConversation) {
-      return NextResponse.json(existingConversation)
+    if (!participants || !Array.isArray(participants) || participants.length < 2) {
+      return NextResponse.json({ error: "At least two participants are required" }, { status: 400 })
     }
 
+    // Create the conversation
     const { data: conversation, error } = await supabase
       .from("conversations")
       .insert({
-        participant_1: participant1,
-        participant_2: participant2,
-        booking_id: bookingId,
+        title: title || null,
       })
       .select()
       .single()
@@ -89,9 +110,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 })
     }
 
-    return NextResponse.json(conversation)
+    // Add participants to the conversation
+    const participantRecords = participants.map((userId) => ({
+      conversation_id: conversation.id,
+      user_id: userId,
+    }))
+
+    const { error: participantsError } = await supabase.from("conversation_participants").insert(participantRecords)
+
+    if (participantsError) {
+      console.error("Error adding participants:", participantsError)
+      return NextResponse.json({ error: "Failed to add participants" }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      conversation: {
+        id: conversation.id,
+        title: conversation.title,
+        participants: participants,
+        createdAt: conversation.created_at,
+        updatedAt: conversation.updated_at,
+      },
+      success: true,
+    })
   } catch (error) {
-    console.error("Create conversation error:", error)
+    console.error("Conversation creation error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
