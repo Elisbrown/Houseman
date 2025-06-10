@@ -53,14 +53,14 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
     const data = await request.json()
-    
+
     // Validate required fields
     const { userId, documentType, documentNumber, documentFront } = data
-    
+
     if (!userId || !documentType || !documentNumber || !documentFront) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
-    
+
     // Create the KYC verification
     const { data: verification, error } = await supabase
       .from("kyc_verifications")
@@ -75,7 +75,17 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single()
-    
+
     if (error) {
       console.error("Error creating KYC verification:", error)
-      return NextResponse.json({ error: "Failed to create KYC verification" }, { status:\
+      return NextResponse.json({ error: "Failed to create KYC verification" }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      verification: verification,
+    })
+  } catch (error) {
+    console.error("KYC API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
