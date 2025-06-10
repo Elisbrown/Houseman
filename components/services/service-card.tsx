@@ -81,12 +81,21 @@ export function ServiceCard({ service, onBook, onMessage, onCall }: ServiceCardP
     onCall?.(service.provider.id)
   }
 
-  const formatPrice = (price: number, currency: string) => {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: 0,
-    }).format(price)
+  const formatPrice = (price: number, currency?: string) => {
+    // Default to XAF (Central African Franc) if no currency provided
+    const currencyCode = currency || "XAF"
+
+    try {
+      return new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: currencyCode,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(price)
+    } catch (error) {
+      // Fallback if currency is invalid
+      return `${price.toLocaleString()} ${currencyCode}`
+    }
   }
 
   const getImageSrc = () => {
