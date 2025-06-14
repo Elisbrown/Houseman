@@ -287,4 +287,4 @@ For support and questions:
 
 ---
 
-**Built with ❤️ for the CEMAC region by Elisbrown**
+**Built with ❤️ for the CEMAC region by Sunyin Elisbrown**
